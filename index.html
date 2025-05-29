@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Books Viewer ver3</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List Ver2</h1>
+  <h1>Book List Ver3</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -38,12 +38,15 @@
     <button onclick="nextPage()">Next</button>
   </div>
 
-  <script>
+  <!-- Modern Supabase SDK with type="module" -->
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
     const SUPABASE_URL = 'https://swuqatywewdjtqayitlm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
 
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const tableName = 'catalog'; // Replace with your actual table name
+    const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const tableName = 'catalog';
     const pageSize = 10;
     let currentPage = 0;
 
@@ -66,7 +69,7 @@
       }
 
       if (data.length === 0 && currentPage > 0) {
-        currentPage--; // prevent going to empty page
+        currentPage--;
         fetchBooks();
         return;
       }
@@ -80,17 +83,17 @@
       });
     }
 
-    function nextPage() {
+    window.nextPage = () => {
       currentPage++;
       fetchBooks();
-    }
+    };
 
-    function prevPage() {
+    window.prevPage = () => {
       if (currentPage > 0) {
         currentPage--;
         fetchBooks();
       }
-    }
+    };
 
     // Initial load
     fetchBooks();
