@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List ver3</h1>
+  <h1>Book List ver4</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -54,7 +54,7 @@
 
       const { data, error } = await supabase
         .from(tableName)
-        .select('bookID, ISBN13')
+        .select('BookID, ISBN13')
         .range(from, to);
 
       const container = document.getElementById('book-list');
