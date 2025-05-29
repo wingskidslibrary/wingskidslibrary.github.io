@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List</h1>
+  <h1>Book List ver2</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -39,11 +39,12 @@
   </div>
 
   <script>
+    import { createClient } from '@supabase/supabase-js'
     const SUPABASE_URL = 'https://swuqatywewdjtqayitlm.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
 
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const tableName = 'your_table_name'; // 🔁 Replace with your actual table name
+    const tableName = 'catalog'; // 🔁 Replace with your actual table name
     const pageSize = 10;
     let currentPage = 0;
 
