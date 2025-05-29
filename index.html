@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List ver6</h1>
+  <h1>Book List ver7</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -39,65 +39,10 @@
   </div>
 
   <script>
-    import { createClient } from '@supabase/supabase-js'
-    const SUPABASE_URL = 'https://swuqatywewdjtqayitlm.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const tableName = 'catalog'; // 🔁 Replace with your actual table name
-    const pageSize = 10;
-    let currentPage = 0;
     const container2 = document.getElementById('book-list');
     container2.textContent = 'Error loading data.';
-    
-    async function fetchBooks() {
-      const from = currentPage * pageSize;
-      const to = from + pageSize - 1;
 
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('BookID, ISBN13')
-        .range(from, to);
-
-      const container = document.getElementById('book-list');
-      container.innerHTML = '';
-      container.textContent = 'Hello';
-
-      if (error) {
-        console.error('Error fetching books:', error);
-        container.textContent = 'Error loading data.';
-        return;
-      }
-
-      if (data.length === 0 && currentPage > 0) {
-        currentPage--; // prevent going to empty page
-        fetchBooks();
-        return;
-      }
-
-      data.forEach(book => {
-        const row = document.createElement('div');
-        row.className = 'row';
-        row.innerHTML = `<div><strong>Book ID:</strong> ${book.bookID}</div>
-                         <div><strong>ISBN13:</strong> ${book.ISBN13}</div>`;
-        container.appendChild(row);
-      });
-    }
-
-    function nextPage() {
-      currentPage++;
-      fetchBooks();
-    }
-
-    function prevPage() {
-      if (currentPage > 0) {
-        currentPage--;
-        fetchBooks();
-      }
-    }
-
-    // Initial load
-    fetchBooks();
   </script>
 </body>
 </html>
