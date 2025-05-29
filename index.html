@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List Ver8</h1>
+  <h1>Book List Ver9</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -45,7 +45,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
 
     const client = createClient(SUPABASE_URL, SUPABASE_KEY);
-    const tableName = 'catalog';
+    const tableName = 'catalogp';
     const pageSize = 10;
     let currentPage = 0;
 
@@ -55,7 +55,7 @@
 
       const { data, error } = await client
         .from(tableName)
-        .select('BookID, ISBN1k3')
+        .select('BookID, ISBN13')
         .range(from, to);
 
       const container = document.getElementById('book-list');
