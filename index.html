@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List</h1>
+  <h1>Book List Ver2</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -53,7 +53,7 @@
 
       const { data, error } = await client
         .from(tableName)
-        .select('bookID, ISBN13')
+        .select('BookID, ISBN13')
         .range(from, to);
 
       const container = document.getElementById('book-list');
