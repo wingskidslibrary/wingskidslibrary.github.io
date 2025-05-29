@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List ver5</h1>
+  <h1>Book List ver6</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -47,7 +47,9 @@
     const tableName = 'catalog'; // 🔁 Replace with your actual table name
     const pageSize = 10;
     let currentPage = 0;
-
+    const container2 = document.getElementById('book-list');
+    container2.textContent = 'Error loading data.';
+    
     async function fetchBooks() {
       const from = currentPage * pageSize;
       const to = from + pageSize - 1;
