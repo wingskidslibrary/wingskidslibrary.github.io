@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List ver10</h1>
+  <h1>Book List ver11</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -44,31 +44,8 @@
     container.textContent = 'Data will be loaded.';
     import { createClient } from '@supabase/supabase-js';
 
-    // Create a single supabase client for interacting with your database
-    const supabase = createClient('https://swuqatywewdjtqayitlm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c');
-    const tablename = catalog;
 
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('bookID, ISBN13')
-        .range(1, 10);
 
-      if (error) {
-        console.error('Error fetching books:', error);
-        container.textContent = 'Error loading data.';
-        return;
-      }
-
-      if (data.length === 0 && currentPage > 0) {
-        currentPage--; // prevent going to empty page
-        container.textContent = 'No Data Fetched.';
-        return;
-      }
-
-      data.forEach(book => {
-        container.textContent = "Book";
-      }
-    
   </script>
 </body>
 </html>
