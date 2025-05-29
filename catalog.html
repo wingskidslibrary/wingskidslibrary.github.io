@@ -40,6 +40,9 @@
     .filter-bar {
       margin-bottom: 20px;
     }
+    .filter-bar input {
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -48,6 +51,8 @@
   <div class="filter-bar">
     <label>Min Age: <input type="number" id="filterMinAge" min="0" /></label>
     <label>Max Age: <input type="number" id="filterMaxAge" min="0" /></label>
+    <label>Title: <input type="text" id="filterTitle" /></label>
+    <label>Author: <input type="text" id="filterAuthor" /></label>
     <button onclick="applyFilter()">Filter</button>
   </div>
 
@@ -62,21 +67,30 @@
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
     const SUPABASE_URL = 'https://swuqatywewdjtqayitlm.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
-
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c'; // Replace with your actual key
     const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
     const tableName = 'catalog';
     const pageSize = 10;
     let currentPage = 0;
     let minAgeFilter = null;
     let maxAgeFilter = null;
+    let titleFilter = '';
+    let authorFilter = '';
+    const googleCache = {};
+
+    function getCachedGoogleData(isbn) {
+      return googleCache[isbn];
+    }
 
     async function fetchGoogleBookData(isbn) {
+      if (googleCache[isbn]) return googleCache[isbn];
       try {
         const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
         const result = await response.json();
         if (result.totalItems > 0) {
-          return result.items[0].volumeInfo;
+          googleCache[isbn] = result.items[0].volumeInfo;
+          return googleCache[isbn];
         }
       } catch (err) {
         console.error("Google Books fetch error:", err);
@@ -85,18 +99,9 @@
     }
 
     async function fetchBooks() {
-      const from = currentPage * pageSize;
-      const to = from + pageSize - 1;
-
-      let query = client
+      const { data, error } = await client
         .from(tableName)
-        .select('ISBN13, Min_Age, Max_Age')
-        .range(from, to);
-
-      if (minAgeFilter !== null) query = query.gte('Min_Age', minAgeFilter);
-      if (maxAgeFilter !== null) query = query.lte('Max_Age', maxAgeFilter);
-
-      const { data, error } = await query;
+        .select('BookID, ISBN13, Min_Age, Max_Age');
 
       const container = document.getElementById('book-list');
       container.innerHTML = '';
@@ -107,21 +112,48 @@
         return;
       }
 
-      for (const book of data) {
+      const enriched = await Promise.all(data.map(async book => {
         const info = await fetchGoogleBookData(book.ISBN13);
+        return { ...book, info };
+      }));
 
+      const filtered = enriched.filter(book => {
+        const title = book.info?.title?.toLowerCase() || '';
+        const authors = (book.info?.authors || []).join(', ').toLowerCase();
+
+        const titleMatch = titleFilter === '' || title.includes(titleFilter);
+        const authorMatch = authorFilter === '' || authors.includes(authorFilter);
+        const minMatch = minAgeFilter === null || (book.Min_Age ?? 0) >= minAgeFilter;
+        const maxMatch = maxAgeFilter === null || (book.Max_Age ?? 100) <= maxAgeFilter;
+
+        return titleMatch && authorMatch && minMatch && maxMatch;
+      });
+
+      const shuffled = filtered.sort(() => 0.5 - Math.random());
+      const totalPages = Math.ceil(shuffled.length / pageSize);
+      const pageData = shuffled.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+      if (pageData.length === 0 && currentPage > 0) {
+        currentPage--;
+        fetchBooks();
+        return;
+      }
+
+      pageData.forEach(book => {
+        const info = book.info || {};
         const row = document.createElement('div');
         row.className = 'row';
 
-        const thumbnail = info?.imageLinks?.thumbnail || 'https://via.placeholder.com/80x100?text=No+Image';
-        const title = info?.title || 'No Title';
-        const authors = info?.authors?.join(', ') || 'Unknown';
-        const description = info?.description || 'No description available.';
+        const thumbnail = info.imageLinks?.thumbnail || 'https://via.placeholder.com/80x100?text=No+Image';
+        const title = info.title || 'No Title';
+        const authors = info.authors?.join(', ') || 'Unknown';
+        const description = info.description || 'No description available.';
         const amazonLink = `https://www.amazon.in/s?k=${book.ISBN13}&tag=110293726354`;
 
         row.innerHTML = `
           <img src="${thumbnail}" alt="Thumbnail" class="thumbnail" />
           <div class="book-info">
+            <div><strong>Book ID:</strong> ${book.BookID}</div>
             <div><strong>Title:</strong> ${title}</div>
             <div><strong>Author(s):</strong> ${authors}</div>
             <div><strong>Min Age:</strong> ${book.Min_Age ?? 'N/A'} | <strong>Max Age:</strong> ${book.Max_Age ?? 'N/A'}</div>
@@ -130,7 +162,7 @@
           </div>
         `;
         container.appendChild(row);
-      }
+      });
     }
 
     function nextPage() {
@@ -146,10 +178,10 @@
     }
 
     function applyFilter() {
-      const min = document.getElementById('filterMinAge').value;
-      const max = document.getElementById('filterMaxAge').value;
-      minAgeFilter = min !== '' ? parseInt(min) : null;
-      maxAgeFilter = max !== '' ? parseInt(max) : null;
+      minAgeFilter = document.getElementById('filterMinAge').value || null;
+      maxAgeFilter = document.getElementById('filterMaxAge').value || null;
+      titleFilter = document.getElementById('filterTitle').value.trim().toLowerCase();
+      authorFilter = document.getElementById('filterAuthor').value.trim().toLowerCase();
       currentPage = 0;
       fetchBooks();
     }
