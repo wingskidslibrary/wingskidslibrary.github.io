@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Books Viewer ver2</title>
+  <title>Books Viewer ver3</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
@@ -74,7 +74,7 @@
       data.forEach(book => {
         const row = document.createElement('div');
         row.className = 'row';
-        row.innerHTML = `<div><strong>Book ID:</strong> ${book.bookID}</div>
+        row.innerHTML = `<div><strong>Book ID:</strong> ${book.BookID}</div>
                          <div><strong>ISBN13:</strong> ${book.ISBN13}</div>`;
         container.appendChild(row);
       });
