@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Book List Ver9</h1>
+  <h1>Book List Ver10</h1>
   <div id="book-list"></div>
 
   <div class="pagination">
@@ -45,7 +45,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
 
     const client = createClient(SUPABASE_URL, SUPABASE_KEY);
-    const tableName = 'catalogp';
+    const tableName = 'catalog';
     const pageSize = 10;
     let currentPage = 0;
 
@@ -60,7 +60,7 @@
 
       const container = document.getElementById('book-list');
       container.innerHTML = '';
-
+      container.textContent = data.length;
       if (error) {
         console.error('Error fetching books:', error);
         container.textContent = 'Error loading data.';
