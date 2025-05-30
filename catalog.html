@@ -1,268 +1,146 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Books Library</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      padding: 15px;
-      margin: 0;
-      background: #f9f9f9;
-      color: #333;
-    }
+// Wings Kids Library - Book Catalog
+import React, { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
-    h1 {
-      text-align: center;
-      color: #4a90e2;
-    }
+const supabase = createClient(
+  "https://swuqatywewdjtqayitlm.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c"
+);
 
-    .filter-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 15px 0;
-      justify-content: center;
-    }
+const AFFILIATE_ID = "123432543556";
 
-    .filter-bar label {
-      font-weight: bold;
-      display: flex;
-      flex-direction: column;
-      font-size: 14px;
-    }
+export default function BookCatalog() {
+  const [books, setBooks] = useState([]);
+  const [filters, setFilters] = useState({
+    customerId: "",
+    minAge: "",
+    maxAge: "",
+    author: "",
+    title: ""
+  });
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [cache, setCache] = useState({});
 
-    .filter-bar input {
-      padding: 5px;
-      font-size: 14px;
-      margin-top: 4px;
-    }
-
-    .filter-bar button {
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      font-size: 14px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .book-list {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .row {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: row;
-      gap: 15px;
-      padding: 15px;
-      overflow: hidden;
-    }
-
-    .thumbnail {
-      height: 100px;
-      width: auto;
-      flex-shrink: 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-
-    .book-info {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      font-size: 14px;
-    }
-
-    .book-info a {
-      color: #007aff;
-      text-decoration: none;
-      font-weight: bold;
-    }
-
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 20px 0;
-    }
-
-    .pagination button {
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      font-size: 14px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    @media (max-width: 600px) {
-      .row {
-        flex-direction: column;
-        align-items: center;
-      }
-      .thumbnail {
-        height: 150px;
-      }
-      .book-info {
-        align-items: center;
-        text-align: center;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <h1>📚 Kids Books Library</h1>
-
-  <div class="filter-bar">
-    <label>Min Age
-      <input type="number" id="filterMinAge" min="0" />
-    </label>
-    <label>Max Age
-      <input type="number" id="filterMaxAge" min="0" />
-    </label>
-    <label>Title
-      <input type="text" id="filterTitle" />
-    </label>
-    <label>Author
-      <input type="text" id="filterAuthor" />
-    </label>
-    <button onclick="applyFilter()">Filter</button>
-  </div>
-
-  <div id="book-list" class="book-list"></div>
-
-  <div class="pagination">
-    <button onclick="prevPage()">Previous</button>
-    <button onclick="nextPage()">Next</button>
-  </div>
-
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    const SUPABASE_URL = 'https://swuqatywewdjtqayitlm.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c';
-    const client = createClient(SUPABASE_URL, SUPABASE_KEY);
-    const pageSize = 10;
-    let currentPage = 0;
-
-    let minAgeFilter = null;
-    let maxAgeFilter = null;
-    let titleFilter = '';
-    let authorFilter = '';
-
-    async function delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function fetchGoogleBookData(isbn) {
-      try {
-        await delay(300); // Avoid 429 error
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-        const json = await res.json();
-
-        if (json.totalItems > 0) {
-          const info = json.items[0].volumeInfo;
-          return {
-            title: info.title || '',
-            authors: info.authors?.join(', ') || '',
-            description: info.description || '',
-            thumbnail: info.imageLinks?.thumbnail || ''
-          };
-        }
-      } catch (err) {
-        console.error('Google API error:', err);
-      }
-
-      return {
-        title: '',
-        authors: '',
-        description: '',
-        thumbnail: ''
-      };
-    }
-
-    async function fetchBooks() {
-      const from = currentPage * pageSize;
-      const to = from + pageSize - 1;
-
-      let query = client
-        .from('catalog')
-        .select('BookID, ISBN13, Min_Age, Max_Age')
-        .order('BookID', { ascending: false })
-        .range(from, to);
-
-      if (minAgeFilter !== null) query = query.gte('Min_Age', minAgeFilter);
-      if (maxAgeFilter !== null) query = query.lte('Max_Age', maxAgeFilter);
-
-      const { data, error } = await query;
-
-      const container = document.getElementById('book-list');
-      container.innerHTML = '';
-
-      if (error) {
-        container.textContent = 'Error loading books.';
-        console.error(error);
-        return;
-      }
-
-      for (const book of data) {
-        const info = await fetchGoogleBookData(book.ISBN13);
-
-        if (titleFilter && !info.title.toLowerCase().includes(titleFilter.toLowerCase())) continue;
-        if (authorFilter && !info.authors.toLowerCase().includes(authorFilter.toLowerCase())) continue;
-
-        const row = document.createElement('div');
-        row.className = 'row';
-
-        row.innerHTML = `
-          <img class="thumbnail" src="${info.thumbnail || 'https://via.placeholder.com/100x150?text=No+Image'}" />
-          <div class="book-info">
-            <div><strong>BookID:</strong> ${book.BookID}</div>
-            <div><strong>Title:</strong> ${info.title}</div>
-            <div><strong>Author(s):</strong> ${info.authors}</div>
-            <div><strong>Min Age:</strong> ${book.Min_Age ?? 'N/A'} | <strong>Max Age:</strong> ${book.Max_Age ?? 'N/A'}</div>
-            <div><strong>Description:</strong> ${info.description}</div>
-            <div><a href="https://www.amazon.in/s?k=${book.ISBN13}&tag=110293726354" target="_blank">Buy on Amazon.in</a></div>
-          </div>
-        `;
-
-        container.appendChild(row);
-      }
-    }
-
-    function nextPage() {
-      currentPage++;
-      fetchBooks();
-    }
-
-    function prevPage() {
-      if (currentPage > 0) {
-        currentPage--;
-        fetchBooks();
-      }
-    }
-
-    function applyFilter() {
-      minAgeFilter = parseInt(document.getElementById('filterMinAge').value) || null;
-      maxAgeFilter = parseInt(document.getElementById('filterMaxAge').value) || null;
-      titleFilter = document.getElementById('filterTitle').value.trim();
-      authorFilter = document.getElementById('filterAuthor').value.trim();
-      currentPage = 0;
-      fetchBooks();
-    }
-
+  useEffect(() => {
     fetchBooks();
-  </script>
-</body>
-</html>
+  }, [filters, page]);
+
+  const fetchBooks = async () => {
+    setLoading(true);
+    let { data: allBooks, error } = await supabase.from("catalog").select("*");
+
+    allBooks = (allBooks || []).filter(book => {
+      const ca = book.Copies_Available;
+      return !["0", "NOT_DEFINED", null, undefined].includes(ca) && parseInt(ca) > 0;
+    });
+
+    if (filters.minAge) allBooks = allBooks.filter(b => b.Min_Age >= parseInt(filters.minAge));
+    if (filters.maxAge) allBooks = allBooks.filter(b => b.Max_Age <= parseInt(filters.maxAge));
+    if (filters.author) allBooks = allBooks.filter(b => b.Authors?.toLowerCase().includes(filters.author.toLowerCase()));
+    if (filters.title) allBooks = allBooks.filter(b => b.Title?.toLowerCase().includes(filters.title.toLowerCase()));
+
+    if (filters.customerId) {
+      const { data: history } = await supabase
+        .from("circulationhistory")
+        .select("ISBN13")
+        .eq("MemberID", filters.customerId);
+      const borrowedISBNs = history?.map((item) => item.ISBN13) || [];
+      allBooks = allBooks.filter(
+        (book) => !borrowedISBNs.includes(book.ISBN13)
+      );
+    }
+
+    const shuffled = [...allBooks].sort(() => 0.5 - Math.random());
+    const start = (page - 1) * 25;
+    const paginated = shuffled.slice(start, start + 25);
+
+    setBooks(paginated);
+    await Promise.all(paginated.map(fetchMissingFields));
+    setLoading(false);
+  };
+
+  const fetchMissingFields = async (book) => {
+    if (book.Title && book.Thumbnail && book.Description && book.Authors) return;
+    if (cache[book.ISBN13]) return;
+
+    try {
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.ISBN13}`);
+      const data = await res.json();
+      const info = data.items?.[0]?.volumeInfo;
+
+      if (info) {
+        await supabase.from("catalog").update({
+          Title: book.Title || info.title,
+          Thumbnail: book.Thumbnail || info.imageLinks?.thumbnail,
+          Description: book.Description || info.description,
+          Authors: book.Authors || (info.authors?.join(", ") ?? null)
+        }).eq("BookID", book.BookID);
+
+        setCache(prev => ({ ...prev, [book.ISBN13]: true }));
+      }
+    } catch (error) {
+      console.error("Error fetching Google Books data", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+    setPage(1);
+  };
+
+  return (
+    <div className="p-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold text-center mb-6 text-purple-700">
+        Wings Kids Library - Book Catalog
+      </h1>
+
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5 mb-4">
+        <Input placeholder="Customer ID" name="customerId" onChange={handleChange} />
+        <Input placeholder="Min Age" name="minAge" onChange={handleChange} />
+        <Input placeholder="Max Age" name="maxAge" onChange={handleChange} />
+        <Input placeholder="Author" name="author" onChange={handleChange} />
+        <Input placeholder="Title" name="title" onChange={handleChange} />
+      </div>
+
+      {loading ? (
+        <p className="text-center text-purple-500">Loading books...</p>
+      ) : (
+        <>
+          <div className="grid md:grid-cols-3 gap-4">
+            {books.map((book) => (
+              <motion.div key={book.BookID} whileHover={{ scale: 1.02 }}>
+                <Card className="rounded-2xl shadow-md border-purple-200">
+                  <CardContent className="p-4">
+                    <img src={book.Thumbnail} alt={book.Title} className="w-full h-40 object-cover rounded-md mb-2" />
+                    <h2 className="text-lg font-semibold text-purple-800">{book.Title}</h2>
+                    <p className="text-sm text-gray-700 mb-1">by {book.Authors}</p>
+                    <p className="text-xs text-gray-500 mb-2">Age Group: {book.Min_Age} to {book.Max_Age}</p>
+                    <p className="text-sm text-gray-600 line-clamp-3 mb-2">{book.Description}</p>
+                    <a
+                      href={`https://www.amazon.in/s?k=${book.ISBN13}&tag=${AFFILIATE_ID}`}
+                      target="_blank"
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Buy on Amazon.in
+                    </a>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="flex justify-center gap-4 mt-6">
+            <Button onClick={() => setPage(page - 1)} disabled={page === 1}>Previous</Button>
+            <span className="text-purple-700 font-bold">Page {page}</span>
+            <Button onClick={() => setPage(page + 1)}>Next</Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
