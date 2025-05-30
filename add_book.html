@@ -1,0 +1,147 @@
+import { useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = "https://swuqatywewdjtqayitlm.supabase.co"; // Replace with your Supabase URL
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dXFhdHl3ZXdkanRxYXlpdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NTMyMDAsImV4cCI6MjA2NDAyOTIwMH0.jN4Ew0w_fYCL8JsNAAgDCrblZeW2RgVrCFTPfSe4t2c"; // Replace with your Supabase anon key
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
+
+export default function ISBNEntryForm() {
+  const [isbn, setIsbn] = useState("");
+  const [bookData, setBookData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    ISBN12: "",
+    Min_Age: "",
+    Max_Age: "",
+    Title: "",
+    Authors: "",
+    Description: "",
+    Thumbnail: "",
+    Reviews: "",
+    Copies_Available: "",
+    Tags: ""
+  });
+  const [submitError, setSubmitError] = useState(null);
+
+  const guessAgeRange = (description, categories) => {
+    const text = `${description} ${categories}`.toLowerCase();
+    if (text.includes("toddler") || text.includes("baby")) return [0, 2];
+    if (text.includes("preschool") || text.includes("kindergarten")) return [3, 5];
+    if (text.includes("early reader") || text.includes("chapter book")) return [6, 8];
+    if (text.includes("middle grade") || text.includes("preteens")) return [9, 12];
+    if (text.includes("teen") || text.includes("young adult")) return [13, 17];
+    return [6, 12];
+  };
+
+  const fetchBookData = async () => {
+    setLoading(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch(`${GOOGLE_BOOKS_API_URL}?q=isbn:${isbn}`);
+      const data = await res.json();
+      if (data.items && data.items.length > 0) {
+        const volume = data.items[0].volumeInfo;
+        const [minAge, maxAge] = guessAgeRange(volume.description || "", volume.categories?.join(", ") || "");
+        const fetchedData = {
+          ISBN13: isbn,
+          Min_Age: minAge.toString(),
+          Max_Age: maxAge.toString(),
+          Title: volume.title || "",
+          Authors: volume.authors?.join(", ") || "",
+          Description: volume.description || "",
+          Thumbnail: volume.imageLinks?.thumbnail || "",
+          Reviews: "",
+          Copies_Available: "1",
+          Tags: volume.categories?.join(", ") || ""
+        };
+        setFormData(fetchedData);
+        setBookData(fetchedData);
+      } else {
+        setSubmitError("No book found with the provided ISBN.");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setSubmitError("Failed to fetch book data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+  };
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    try {
+      const { data, error } = await supabase.from("catalog").insert([formData]);
+      if (error) throw error;
+      alert("Book added successfully!");
+      setBookData(null);
+      setFormData({
+        ISBN12: "",
+        Min_Age: "",
+        Max_Age: "",
+        Title: "",
+        Authors: "",
+        Description: "",
+        Thumbnail: "",
+        Reviews: "",
+        Copies_Available: ""
+      });
+    } catch (error) {
+      console.error("Submit error:", error);
+      setSubmitError(error.message || "An error occurred while submitting the book. Please try again.");
+    }
+  };
+
+  return (
+    <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
+      <div style={{ background: "linear-gradient(to bottom right, #cbd5e1, #e9d5ff)", padding: 16, borderRadius: 8, boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }}>
+        <h2 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 12 }}>Add Book by ISBN</h2>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            placeholder="Enter ISBN"
+            value={isbn}
+            onChange={(e) => setIsbn(e.target.value)}
+            style={{ flexGrow: 1, padding: 8, border: "1px solid #ccc", borderRadius: 4 }}
+          />
+          <button onClick={fetchBookData} disabled={loading} style={{ padding: "8px 16px", backgroundColor: "#2563eb", color: "white", borderRadius: 4 }}>
+            {loading ? "Loading..." : "Fetch"}
+          </button>
+        </div>
+        {submitError && <p style={{ color: "red", marginTop: 8 }}>{submitError}</p>}
+      </div>
+
+      {bookData && (
+        <div style={{ marginTop: 16, background: "#fff", padding: 16, borderRadius: 8, boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }}>
+          <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>Review & Edit Book Info</h3>
+          {Object.entries(formData).map(([key, value]) => (
+            <div key={key} style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontSize: 14, marginBottom: 4 }}>{key.replace(/_/g, " ")}</label>
+              {key === "Description" || key === "Reviews" ? (
+                <textarea
+                  value={value}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                  style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 4 }}
+                />
+              ) : (
+                <input
+                  value={value}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                  style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 4 }}
+                />
+              )}
+            </div>
+          ))}
+          <button onClick={handleSubmit} style={{ width: "100%", padding: 12, backgroundColor: "#2563eb", color: "white", borderRadius: 4 }}>
+            Confirm and Add
+          </button>
+          {submitError && <p style={{ color: "red", marginTop: 8 }}>{submitError}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
